@@ -13,17 +13,33 @@ A campus auction marketplace for listing, discovering, and bidding on student it
 - Responsive desktop and mobile interface
 - Browser-local demo persistence
 
-## Run locally
+## Full-stack run
 
 ```bash
 npm install
-npm run dev
+npm run dev:full
 ```
 
-Open `http://localhost:5173`.
+- Frontend: `http://localhost:5173`
+- Backend API and SSE: `http://localhost:3001`
 
-## Production build
+For a production build, run:
 
 ```bash
 npm run build
+npm start
 ```
+
+Then open `http://localhost:3001`. The production server serves both the React app and API.
+
+## Backend and database
+
+- Database: SQLite via `sql.js`, a WebAssembly implementation requiring no native build tools.
+- Database file: `campusbid.sqlite` in the project root.
+- Tables: `users`, `listings`, `bids`, and `notifications`.
+- Authentication: signed JWT tokens stored by the browser.
+- Passwords: bcrypt hashes; passwords are never stored as plain text.
+- Real-time updates: Server-Sent Events at `/api/events` refresh all connected browsers whenever listings, bids, or profiles change.
+- API base: `/api`
+
+Inspect the database with any SQLite-capable tool, VS Code extension, or DBeaver. After users and listings are created, the file appears in the project root.
