@@ -21,7 +21,8 @@ const save=()=>fs.writeFileSync(dbPath,Buffer.from(db.export()))
 db.run(`CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,email TEXT UNIQUE,password TEXT,phone TEXT,branch TEXT,year TEXT,bio TEXT,avatar TEXT);
 CREATE TABLE IF NOT EXISTS listings(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT,category TEXT,condition TEXT,description TEXT,price REAL,increment REAL,seller_id INTEGER,seller TEXT,location TEXT,ends INTEGER,image TEXT,status TEXT DEFAULT 'active',winner_id INTEGER,winner_name TEXT,winner_bid REAL,outcome TEXT,outcome_time INTEGER);
 CREATE TABLE IF NOT EXISTS bids(id INTEGER PRIMARY KEY AUTOINCREMENT,listing_id INTEGER,bidder_id INTEGER,bidder TEXT,amount REAL,time INTEGER);
-CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,title TEXT,body TEXT,time INTEGER,read INTEGER DEFAULT 0);`)
+CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,title TEXT,body TEXT,time INTEGER,read INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS watchlist(user_id INTEGER NOT NULL,listing_id INTEGER NOT NULL,created_time INTEGER NOT NULL,PRIMARY KEY(user_id,listing_id));`)
 
 const count=(sql,p=[])=>db.exec(sql,p.length?p:[])[0]?.values?.[0]?.[0]||0
 if(count('SELECT COUNT(*) FROM listings')===0){
@@ -74,6 +75,9 @@ app.get('/api/events',(req,res)=>{res.writeHead(200,{'Content-Type':'text/event-
 app.get('/api/notifications',auth,(req,res)=>res.json(all('SELECT * FROM notifications WHERE user_id=? ORDER BY time DESC LIMIT 50',[req.user.id])))
 app.put('/api/notifications/:id/read',auth,(req,res)=>{db.run('UPDATE notifications SET read=1 WHERE id=? AND user_id=?',[req.params.id,req.user.id]);save();res.json({ok:true})})
 app.put('/api/notifications/read-all',auth,(req,res)=>{db.run('UPDATE notifications SET read=1 WHERE user_id=?',[req.user.id]);save();res.json({ok:true})})
+app.get('/api/watchlist',auth,(req,res)=>{const rows=all('SELECT listing_id FROM watchlist WHERE user_id=? ORDER BY created_time DESC',[req.user.id]);res.json(rows.map(row=>Number(row.listing_id)))})
+app.put('/api/watchlist/:id',auth,(req,res)=>{const listing=one('SELECT id FROM listings WHERE id=?',[req.params.id]);if(!listing)return res.status(404).json({error:'Auction not found'});const existing=one('SELECT listing_id FROM watchlist WHERE user_id=? AND listing_id=?',[req.user.id,listing.id]);if(existing){db.run('DELETE FROM watchlist WHERE user_id=? AND listing_id=?',[req.user.id,listing.id])}else{db.run('INSERT INTO watchlist(user_id,listing_id,created_time) VALUES(?,?,?)',[req.user.id,listing.id,Date.now()])}save();broadcast('watchlist');const rows=all('SELECT listing_id FROM watchlist WHERE user_id=? ORDER BY created_time DESC',[req.user.id]);res.json({listingIds:rows.map(row=>Number(row.listing_id)),liked:!existing})})
+app.delete('/api/watchlist/:id',auth,(req,res)=>{db.run('DELETE FROM watchlist WHERE user_id=? AND listing_id=?',[req.user.id,req.params.id]);save();broadcast('watchlist');res.json({ok:true})})
 
 if(fs.existsSync(path.join(__dirname,'dist'))){app.use(express.static(path.join(__dirname,'dist')));app.use((req,res)=>{if(!req.path.startsWith('/api'))return res.sendFile(path.join(__dirname,'dist','index.html'));res.status(404).json({error:'API route not found'})})}
 const port=process.env.PORT||3001;app.listen(port,()=>console.log(`CampusBid API + SQLite database running at http://localhost:${port}`))
