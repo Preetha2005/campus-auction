@@ -8,6 +8,7 @@ A campus auction marketplace for listing, discovering, and bidding on student it
 - Search, category filters, and price/time sorting
 - Minimum increment validation and 30-second last-call extensions
 - Automatic bidding and watchlists
+- Persistent in-app alerts plus browser pop-ups for outbid, bids, auction closure, sale outcomes, and watchlist endings
 - Listing creation with a required user-selected product photo, category, condition, description, and auction duration
 - Seller editing of active auction details and cancellation with confirmed outcomes
 - AI assistant keyword and maximum-price search
