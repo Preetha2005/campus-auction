@@ -11,7 +11,9 @@ A campus auction marketplace for listing, discovering, and bidding on student it
 - Listing creation with category, condition, description, and auction duration
 - AI assistant keyword and maximum-price search
 - Responsive desktop and mobile interface
-- Browser-local demo persistence
+- Automatic closure with provisional winners or unsold outcomes
+- Seller approval/rejection, reservation, handover confirmation, cancellation, and failed-pickup tracking
+- Shared SQLite persistence and real-time multi-user updates
 
 ## Full-stack run
 
@@ -43,3 +45,12 @@ Then open `http://localhost:3001`. The production server serves both the React a
 - API base: `/api`
 
 Inspect the database with any SQLite-capable tool, VS Code extension, or DBeaver. After users and listings are created, the file appears in the project root.
+
+## Auction closing and sale outcomes
+
+The backend checks listings whenever listings are loaded or bids are placed. When closing time passes, the highest bid becomes `provisional_winner`; an auction with no bids becomes `unsold`.
+
+- Seller actions use `POST /api/listings/:id/outcome` with `{ "action": "approve" | "reject" | "cancel" | "handover" | "pickup_failed" }`.
+- Approval changes the listing to `reserved`; `handover` changes it to `sold` only after campus pickup is confirmed.
+- Rejection, seller cancellation, and failed pickup are saved as clear `outcome` values and times on the listing and delivered to the winner when applicable.
+- Sellers can review and manage outcomes in the **My auctions** dashboard.
